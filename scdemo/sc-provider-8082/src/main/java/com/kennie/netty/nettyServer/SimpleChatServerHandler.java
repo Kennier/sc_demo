@@ -5,9 +5,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
-public class SimpleChatServerHandler extends SimpleChannelInboundHandler<String> {
+public class SimpleChatServerHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 
     public static ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
@@ -33,14 +34,15 @@ public class SimpleChatServerHandler extends SimpleChannelInboundHandler<String>
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, String s) throws Exception {
+    protected void messageReceived(ChannelHandlerContext ctx, TextWebSocketFrame s) throws Exception {
         Channel channel = ctx.channel();
         for (Channel c: channels) {
             if (channel != c){
-                c.writeAndFlush("[" + channel.remoteAddress() + "]" + s + "\n");
+                c.writeAndFlush(msgPot("{\"name\":\"" + channel.id() + "\",\"msg\":\"" + s.text() + "\"}"));
             } else {
-                c.writeAndFlush("[txbb]" + s + "\n");
+                c.writeAndFlush(msgPot("{\"name\":\"self\",\"msg\":\"" + s.text() + "\"}"));
             }
+            System.out.println("发消息："+s.text());
         }
     }
 
@@ -69,4 +71,9 @@ public class SimpleChatServerHandler extends SimpleChannelInboundHandler<String>
         cause.printStackTrace();
         ctx.close();
     }
+
+    public TextWebSocketFrame msgPot(String msg) {
+        return new TextWebSocketFrame(msg);
+    }
+
 }
